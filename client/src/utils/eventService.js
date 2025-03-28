@@ -1,32 +1,35 @@
-import api from './api';
+import api from "./api";
 
 // Create a new event
 export const createEvent = async (eventData) => {
   try {
-    const response = await api.post('/events', eventData);
+    const response = await api.post("/events", eventData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to create event' };
+    throw error.response?.data || { message: "Failed to create event" };
   }
 };
 
 // Get all events with optional filtering
 export const getEvents = async (params = {}) => {
   try {
-    const response = await api.get('/events', { params });
+    const response = await api.get("/events", { params });
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch events' };
+    throw error.response?.data || { message: "Failed to fetch events" };
   }
 };
 
 // Get a single event by ID
 export const getEvent = async (id) => {
   try {
+    if (!id || id === "undefined") {
+      throw { response: { data: { message: "Invalid event ID" } } };
+    }
     const response = await api.get(`/events/${id}`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch event details' };
+    throw error.response?.data || { message: "Failed to fetch event details" };
   }
 };
 
@@ -36,7 +39,7 @@ export const updateEvent = async (id, eventData) => {
     const response = await api.put(`/events/${id}`, eventData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to update event' };
+    throw error.response?.data || { message: "Failed to update event" };
   }
 };
 
@@ -46,7 +49,7 @@ export const deleteEvent = async (id) => {
     const response = await api.delete(`/events/${id}`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to delete event' };
+    throw error.response?.data || { message: "Failed to delete event" };
   }
 };
 
@@ -56,7 +59,7 @@ export const registerForEvent = async (id) => {
     const response = await api.post(`/events/${id}/register`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to register for event' };
+    throw error.response?.data || { message: "Failed to register for event" };
   }
 };
 
@@ -66,17 +69,17 @@ export const cancelRegistration = async (id) => {
     const response = await api.delete(`/events/${id}/register`);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to cancel registration' };
+    throw error.response?.data || { message: "Failed to cancel registration" };
   }
 };
 
 // Get user's events (registered and hosted)
 export const getUserEvents = async () => {
   try {
-    const response = await api.get('/events/user/me');
+    const response = await api.get("/events/user/me");
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch user events' };
+    throw error.response?.data || { message: "Failed to fetch user events" };
   }
 };
 
@@ -89,7 +92,7 @@ const eventService = {
   deleteEvent,
   registerForEvent,
   cancelRegistration,
-  getUserEvents
+  getUserEvents,
 };
 
-export default eventService; 
+export default eventService;

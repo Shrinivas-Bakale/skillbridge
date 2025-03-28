@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -16,69 +16,60 @@ import {
   Paper,
   Divider,
   CircularProgress,
-  Alert
-} from '@mui/material';
+  Alert,
+} from "@mui/material";
 import {
   CalendarMonth as CalendarIcon,
   AccessTime as TimeIcon,
-  LocationOn as LocationIcon
-} from '@mui/icons-material';
-import { motion } from 'framer-motion';
-import eventService from '../utils/eventService';
-import { useAuth } from '../contexts/AuthContext';
+  LocationOn as LocationIcon,
+} from "@mui/icons-material";
+import { motion } from "framer-motion";
+import eventService from "../utils/eventService";
+import { useAuth } from "../contexts/AuthContext";
 
 const MotionPaper = motion(Paper);
 
-const eventTypes = [
-  'Workshop',
-  'Seminar',
-  'Conference',
-  'Hackathon',
-  'Meetup',
-  'Competition',
-  'Training',
-  'Other'
-];
+const eventTypes = ["workshop", "meetup", "course"];
 
 const CreateEvent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
+  const [error, setError] = useState("");
+
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    type: '',
-    date: '',
-    time: '',
-    location: '',
+    title: "",
+    description: "",
+    type: "",
+    date: "",
+    time: "",
+    location: "",
     price: 0,
-    maxParticipants: '',
-    requirements: ''
+    maxParticipants: "",
+    requirements: "",
   });
 
   const [formErrors, setFormErrors] = useState({
-    title: '',
-    description: '',
-    type: '',
-    date: '',
-    time: '',
-    location: ''
+    title: "",
+    description: "",
+    type: "",
+    date: "",
+    time: "",
+    location: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear the error when user types
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -88,41 +79,41 @@ const CreateEvent = () => {
     let isValid = true;
 
     if (!formData.title.trim()) {
-      errors.title = 'Title is required';
+      errors.title = "Title is required";
       isValid = false;
     }
 
     if (!formData.description.trim()) {
-      errors.description = 'Description is required';
+      errors.description = "Description is required";
       isValid = false;
     }
 
     if (!formData.type) {
-      errors.type = 'Event type is required';
+      errors.type = "Event type is required";
       isValid = false;
     }
 
     if (!formData.date) {
-      errors.date = 'Date is required';
+      errors.date = "Date is required";
       isValid = false;
     } else {
       const selectedDate = new Date(formData.date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       if (selectedDate < today) {
-        errors.date = 'Date cannot be in the past';
+        errors.date = "Date cannot be in the past";
         isValid = false;
       }
     }
 
     if (!formData.time) {
-      errors.time = 'Time is required';
+      errors.time = "Time is required";
       isValid = false;
     }
 
     if (!formData.location.trim()) {
-      errors.location = 'Location is required';
+      errors.location = "Location is required";
       isValid = false;
     }
 
@@ -139,27 +130,31 @@ const CreateEvent = () => {
 
     try {
       setLoading(true);
-      setError('');
+      setError("");
 
       // Combine date and time for the backend
       const dateTime = new Date(`${formData.date}T${formData.time}`);
-      
+
       const eventData = {
         title: formData.title,
         description: formData.description,
-        type: formData.type,
+        type: formData.type.toLowerCase(),
         date: dateTime.toISOString(),
         location: formData.location,
         price: Number(formData.price) || 0,
-        maxParticipants: formData.maxParticipants ? Number(formData.maxParticipants) : null,
-        requirements: formData.requirements
+        maxAttendees: formData.maxParticipants
+          ? Number(formData.maxParticipants)
+          : 1,
+        requirements: formData.requirements,
       };
 
       const createdEvent = await eventService.createEvent(eventData);
       navigate(`/event/${createdEvent._id}`);
     } catch (err) {
-      setError(err.message || 'Failed to create event. Please try again later.');
-      console.error('Error creating event:', err);
+      setError(
+        err.message || "Failed to create event. Please try again later."
+      );
+      console.error("Error creating event:", err);
     } finally {
       setLoading(false);
     }
@@ -170,7 +165,7 @@ const CreateEvent = () => {
       <Typography variant="h4" component="h1" gutterBottom align="center">
         Create a New Event
       </Typography>
-      
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
@@ -239,7 +234,9 @@ const CreateEvent = () => {
                     </MenuItem>
                   ))}
                 </Select>
-                {formErrors.type && <FormHelperText>{formErrors.type}</FormHelperText>}
+                {formErrors.type && (
+                  <FormHelperText>{formErrors.type}</FormHelperText>
+                )}
               </FormControl>
             </Grid>
 
@@ -252,7 +249,7 @@ const CreateEvent = () => {
                 value={formData.maxParticipants}
                 onChange={handleChange}
                 InputProps={{
-                  inputProps: { min: 1 }
+                  inputProps: { min: 1 },
                 }}
                 disabled={loading}
                 helperText="Leave empty for unlimited"
@@ -275,16 +272,18 @@ const CreateEvent = () => {
                 value={formData.date}
                 onChange={handleChange}
                 error={!!formErrors.date}
-                helperText={formErrors.date || 'When will the event take place?'}
+                helperText={
+                  formErrors.date || "When will the event take place?"
+                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
                       <CalendarIcon />
                     </InputAdornment>
-                  )
+                  ),
                 }}
                 InputLabelProps={{
-                  shrink: true
+                  shrink: true,
                 }}
                 disabled={loading}
                 required
@@ -300,16 +299,18 @@ const CreateEvent = () => {
                 value={formData.time}
                 onChange={handleChange}
                 error={!!formErrors.time}
-                helperText={formErrors.time || 'What time will the event start?'}
+                helperText={
+                  formErrors.time || "What time will the event start?"
+                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
                       <TimeIcon />
                     </InputAdornment>
-                  )
+                  ),
                 }}
                 InputLabelProps={{
-                  shrink: true
+                  shrink: true,
                 }}
                 disabled={loading}
                 required
@@ -324,13 +325,16 @@ const CreateEvent = () => {
                 value={formData.location}
                 onChange={handleChange}
                 error={!!formErrors.location}
-                helperText={formErrors.location || 'Can be a physical address or virtual meeting link'}
+                helperText={
+                  formErrors.location ||
+                  "Can be a physical address or virtual meeting link"
+                }
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
                       <LocationIcon />
                     </InputAdornment>
-                  )
+                  ),
                 }}
                 disabled={loading}
                 required
@@ -353,8 +357,10 @@ const CreateEvent = () => {
                 value={formData.price}
                 onChange={handleChange}
                 InputProps={{
-                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                  inputProps: { min: 0, step: "0.01" }
+                  startAdornment: (
+                    <InputAdornment position="start">₹</InputAdornment>
+                  ),
+                  inputProps: { min: 0, step: "0.01" },
                 }}
                 helperText="Set 0 for free events"
                 disabled={loading}
@@ -375,7 +381,7 @@ const CreateEvent = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sx={{ display: 'flex', gap: 2, mt: 2 }}>
+            <Grid item xs={12} sx={{ display: "flex", gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
                 fullWidth
@@ -390,7 +396,7 @@ const CreateEvent = () => {
                 fullWidth
                 disabled={loading}
               >
-                {loading ? <CircularProgress size={24} /> : 'Create Event'}
+                {loading ? <CircularProgress size={24} /> : "Create Event"}
               </Button>
             </Grid>
           </Grid>
@@ -400,4 +406,4 @@ const CreateEvent = () => {
   );
 };
 
-export default CreateEvent; 
+export default CreateEvent;

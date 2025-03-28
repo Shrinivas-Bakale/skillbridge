@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="96" cy="96" r="96" fill="#3e878a"/>
+  
+  <!-- SB Letters -->
+  <path d="M60 120C60 126.627 65.373 132 72 132H96C102.627 132 108 126.627 108 120C108 113.373 102.627 108 96 108H72C65.373 108 60 102.627 60 96C60 89.373 65.373 84 72 84H96C102.627 84 108 89.373 108 96" 
+    stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <path d="M108 72C108 65.373 113.373 60 120 60H132C138.627 60 144 65.373 144 72V120C144 126.627 138.627 132 132 132H120C113.373 132 108 126.627 108 120" 
+    stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg> 

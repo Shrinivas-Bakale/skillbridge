@@ -3,23 +3,23 @@
   "name": "SkillBridge - Connect and Learn",
   "icons": [
     {
-      "src": "https://placehold.co/32",
+      "src": "favicon.svg",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/svg+xml"
     },
     {
-      "src": "https://placehold.co/192",
-      "type": "image/png",
+      "src": "logo.svg",
+      "type": "image/svg+xml",
       "sizes": "192x192"
     },
     {
-      "src": "https://placehold.co/512",
-      "type": "image/png",
+      "src": "logo.svg",
+      "type": "image/svg+xml",
       "sizes": "512x512"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#3498db",
+  "theme_color": "#3e878a",
   "background_color": "#ecf0f1"
-} 
+}

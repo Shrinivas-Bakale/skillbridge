@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SkillBridge Favicon Generator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      .preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .favicon-container {
+        text-align: center;
+      }
+      h1 {
+        color: #3e878a;
+        text-align: center;
+      }
+      p {
+        margin-bottom: 20px;
+      }
+      canvas {
+        border: 1px solid #ddd;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>SkillBridge Favicon Generator</h1>
+      <p>
+        Right-click on the generated images below and select "Save image as..."
+        to download the PNG favicons.
+      </p>
+
+      <div class="preview">
+        <div class="favicon-container">
+          <h3>16x16 Favicon</h3>
+          <svg
+            id="svg16"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="8" cy="8" r="8" fill="#3e878a" />
+            <path
+              d="M5 10C5 10.552 5.448 11 6 11H8C8.552 11 9 10.552 9 10C9 9.448 8.552 9 8 9H6C5.448 9 5 8.552 5 8C5 7.448 5.448 7 6 7H8C8.552 7 9 7.448 9 8"
+              stroke="white"
+              stroke-width="1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M9 6C9 5.448 9.448 5 10 5H11C11.552 5 12 5.448 12 6V10C12 10.552 11.552 11 11 11H10C9.448 11 9 10.552 9 10"
+              stroke="white"
+              stroke-width="1"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <canvas id="canvas16" width="16" height="16"></canvas>
+          <p><a id="download16" href="#">Download 16x16</a></p>
+        </div>
+
+        <div class="favicon-container">
+          <h3>32x32 Favicon</h3>
+          <svg
+            id="svg32"
+            width="32"
+            height="32"
+            viewBox="0 0 32 32"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="16" cy="16" r="16" fill="#3e878a" />
+            <path
+              d="M10 20C10 21.105 10.895 22 12 22H16C17.105 22 18 21.105 18 20C18 18.895 17.105 18 16 18H12C10.895 18 10 17.105 10 16C10 14.895 10.895 14 12 14H16C17.105 14 18 14.895 18 16"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M18 12C18 10.895 18.895 10 20 10H22C23.105 10 24 10.895 24 12V20C24 21.105 23.105 22 22 22H20C18.895 22 18 21.105 18 20"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <canvas id="canvas32" width="32" height="32"></canvas>
+          <p><a id="download32" href="#">Download 32x32</a></p>
+        </div>
+
+        <div class="favicon-container">
+          <h3>64x64 Favicon</h3>
+          <svg
+            id="svg64"
+            width="64"
+            height="64"
+            viewBox="0 0 64 64"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <circle cx="32" cy="32" r="32" fill="#3e878a" />
+            <path
+              d="M20 40C20 42.21 21.79 44 24 44H32C34.21 44 36 42.21 36 40C36 37.79 34.21 36 32 36H24C21.79 36 20 34.21 20 32C20 29.79 21.79 28 24 28H32C34.21 28 36 29.79 36 32"
+              stroke="white"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M36 24C36 21.79 37.79 20 40 20H44C46.21 20 48 21.79 48 24V40C48 42.21 46.21 44 44 44H40C37.79 44 36 42.21 36 40"
+              stroke="white"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <canvas id="canvas64" width="64" height="64"></canvas>
+          <p><a id="download64" href="#">Download 64x64</a></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Function to convert SVG to canvas and create download link
+      function setupSVGToCanvas(svgId, canvasId, downloadId, size) {
+        const svg = document.getElementById(svgId);
+        const canvas = document.getElementById(canvasId);
+        const downloadLink = document.getElementById(downloadId);
+
+        // Convert SVG to data URL
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const svgURL = URL.createObjectURL(svgBlob);
+
+        // Draw SVG to canvas
+        const img = new Image();
+        img.onload = function () {
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0);
+
+          // Set up download link
+          downloadLink.href = canvas.toDataURL("image/png");
+          downloadLink.download = `favicon-${size}x${size}.png`;
+        };
+        img.src = svgURL;
+      }
+
+      // Setup all sizes
+      window.onload = function () {
+        setupSVGToCanvas("svg16", "canvas16", "download16", 16);
+        setupSVGToCanvas("svg32", "canvas32", "download32", 32);
+        setupSVGToCanvas("svg64", "canvas64", "download64", 64);
+      };
+    </script>
+  </body>
+</html>
