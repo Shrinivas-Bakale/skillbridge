@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -6,215 +7,270 @@ import {
   Grid,
   Card,
   CardContent,
+  CardActions,
+  Button,
   Tabs,
   Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Button,
-  Chip,
+  Divider,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { motion } from 'framer-motion';
+import EventCard from '../components/EventCard';
 import { useAuth } from '../contexts/AuthContext';
-import { formatDate, formatPrice } from '../utils/helpers';
-
-const MotionCard = motion(Card);
+import { eventService } from '../utils/eventService';
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
+  const [value, setValue] = useState(0);
+  const [userEvents, setUserEvents] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock data - replace with API calls
-  const upcomingEvents = [
-    {
-      id: 1,
-      title: 'Web Development Workshop',
-      date: '2024-04-15',
-      status: 'confirmed',
-      price: 49.99,
-    },
-    {
-      id: 2,
-      title: 'Data Science Meetup',
-      date: '2024-04-20',
-      status: 'pending',
-      price: 0,
-    },
-  ];
+  useEffect(() => {
+    const fetchUserEvents = async () => {
+      try {
+        setLoading(true);
+        const data = await eventService.getUserEvents();
+        setUserEvents(data);
+        setError('');
+      } catch (err) {
+        setError(err.message || 'Failed to fetch your events. Please try again later.');
+        console.error('Error fetching user events:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const hostedEvents = [
-    {
-      id: 3,
-      title: 'UI/UX Design Workshop',
-      date: '2024-04-25',
-      participants: 12,
-      status: 'active',
-    },
-  ];
+    fetchUserEvents();
+  }, []);
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
+  const handleChange = (event, newValue) => {
+    setValue(newValue);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'confirmed':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'active':
-        return 'info';
+  const handleCreateEvent = () => {
+    navigate('/create-event');
+  };
+
+  const handleViewAllEvents = () => {
+    navigate('/events');
+  };
+
+  // Filter events based on the selected tab
+  const getDisplayedEvents = () => {
+    if (!userEvents) return [];
+    
+    switch (value) {
+      case 0: // Upcoming events the user is registered for
+        return userEvents.registered?.filter(event => new Date(event.date) >= new Date()) || [];
+      case 1: // Past events the user attended
+        return userEvents.registered?.filter(event => new Date(event.date) < new Date()) || [];
+      case 2: // Events hosted by the user
+        return userEvents.hosted || [];
       default:
-        return 'default';
+        return [];
     }
   };
 
+  if (loading) {
+    return (
+      <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Container>
+    );
+  }
+
+  const displayedEvents = getDisplayedEvents();
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Welcome, {user?.name || 'User'}!
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Welcome, {user?.name || 'Student'}!
+        </Typography>
+        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+          Manage your events and discover new opportunities
+        </Typography>
+      </Box>
 
-      <Grid container spacing={3}>
-        {/* Overview Cards */}
-        <Grid item xs={12} md={4}>
-          <MotionCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Upcoming Events
-              </Typography>
-              <Typography variant="h4">
-                {upcomingEvents.length}
-              </Typography>
-            </CardContent>
-          </MotionCard>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <MotionCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Hosted Events
-              </Typography>
-              <Typography variant="h4">
-                {hostedEvents.length}
-              </Typography>
-            </CardContent>
-          </MotionCard>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <MotionCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                Total Participants
-              </Typography>
-              <Typography variant="h4">
-                {hostedEvents.reduce((sum, event) => sum + event.participants, 0)}
-              </Typography>
-            </CardContent>
-          </MotionCard>
-        </Grid>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
-        {/* Events Tabs */}
-        <Grid item xs={12}>
-          <MotionCard
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <CardContent>
-              <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-                <Tab label="Upcoming Events" />
-                <Tab label="Hosted Events" />
-                <Tab label="Past Events" />
-              </Tabs>
-
-              {activeTab === 0 && (
-                <List>
-                  {upcomingEvents.map((event) => (
-                    <ListItem key={event.id} divider>
-                      <ListItemAvatar>
-                        <Avatar>{event.title[0]}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={event.title}
-                        secondary={formatDate(event.date)}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Chip
-                          label={event.status}
-                          color={getStatusColor(event.status)}
-                          size="small"
-                        />
-                        <Typography variant="body2" color="primary">
-                          {formatPrice(event.price)}
-                        </Typography>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          href={`/event/${event.id}`}
-                        >
-                          View
-                        </Button>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-
-              {activeTab === 1 && (
-                <List>
-                  {hostedEvents.map((event) => (
-                    <ListItem key={event.id} divider>
-                      <ListItemAvatar>
-                        <Avatar>{event.title[0]}</Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={event.title}
-                        secondary={formatDate(event.date)}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Chip
-                          label={event.status}
-                          color={getStatusColor(event.status)}
-                          size="small"
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          {event.participants} participants
-                        </Typography>
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          href={`/event/${event.id}`}
-                        >
-                          Manage
-                        </Button>
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-
-              {activeTab === 2 && (
-                <Typography color="text.secondary" align="center">
-                  No past events found
+      <Grid container spacing={4}>
+        <Grid item xs={12} md={8}>
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h5" component="h2">
+                Your Events
+              </Typography>
+              <Button variant="contained" onClick={handleCreateEvent}>
+                Create Event
+              </Button>
+            </Box>
+            
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              indicatorColor="primary"
+              textColor="primary"
+              variant="fullWidth"
+              sx={{ mb: 2 }}
+            >
+              <Tab label="Upcoming" />
+              <Tab label="Past" />
+              <Tab label="Hosted" />
+            </Tabs>
+            
+            {displayedEvents.length > 0 ? (
+              <Grid container spacing={3}>
+                {displayedEvents.map((event) => (
+                  <Grid item xs={12} sm={6} key={event._id}>
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <EventCard event={event} />
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography variant="body1" color="text.secondary">
+                  {value === 0
+                    ? "You're not registered for any upcoming events."
+                    : value === 1
+                    ? "You haven't attended any events yet."
+                    : "You haven't hosted any events yet."}
                 </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={handleViewAllEvents}
+                  sx={{ mt: 2 }}
+                >
+                  Explore Events
+                </Button>
+              </Box>
+            )}
+          </Box>
+        </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <Card elevation={2}>
+            <CardContent>
+              <Typography variant="h6" component="div" gutterBottom>
+                Your Profile
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              
+              <Typography variant="body2" gutterBottom>
+                <strong>Name:</strong> {user?.name || 'Not set'}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Email:</strong> {user?.email}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                <strong>Bio:</strong> {user?.bio || 'No bio provided'}
+              </Typography>
+              
+              {user?.skills?.length > 0 && (
+                <>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>Skills:</strong>
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {user.skills.map((skill, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          backgroundColor: 'primary.light',
+                          color: 'primary.contrastText',
+                          borderRadius: 1,
+                          px: 1,
+                          py: 0.5,
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        {skill}
+                      </Box>
+                    ))}
+                  </Box>
+                </>
+              )}
+              
+              {user?.interests?.length > 0 && (
+                <>
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    <strong>Interests:</strong>
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                    {user.interests.map((interest, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          backgroundColor: 'secondary.light',
+                          color: 'secondary.contrastText',
+                          borderRadius: 1,
+                          px: 1,
+                          py: 0.5,
+                          fontSize: '0.75rem',
+                        }}
+                      >
+                        {interest}
+                      </Box>
+                    ))}
+                  </Box>
+                </>
               )}
             </CardContent>
-          </MotionCard>
+            <CardActions>
+              <Button size="small" onClick={() => navigate('/profile')}>
+                Edit Profile
+              </Button>
+            </CardActions>
+          </Card>
+          
+          <Card elevation={2} sx={{ mt: 3 }}>
+            <CardContent>
+              <Typography variant="h6" component="div" gutterBottom>
+                Quick Stats
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              
+              <Grid container spacing={2}>
+                <Grid item xs={4}>
+                  <Box textAlign="center">
+                    <Typography variant="h4" color="primary">
+                      {userEvents?.registered?.filter(event => new Date(event.date) >= new Date()).length || 0}
+                    </Typography>
+                    <Typography variant="body2">Upcoming</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={4}>
+                  <Box textAlign="center">
+                    <Typography variant="h4" color="primary">
+                      {userEvents?.registered?.filter(event => new Date(event.date) < new Date()).length || 0}
+                    </Typography>
+                    <Typography variant="body2">Attended</Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={4}>
+                  <Box textAlign="center">
+                    <Typography variant="h4" color="primary">
+                      {userEvents?.hosted?.length || 0}
+                    </Typography>
+                    <Typography variant="body2">Hosted</Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Container>

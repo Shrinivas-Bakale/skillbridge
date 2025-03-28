@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import * as authService from '../utils/authService';
 
 // Create the Auth Context
 const AuthContext = createContext();
@@ -18,73 +19,65 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage token)
-    const token = localStorage.getItem('token');
-    if (token) {
-      // For demo purposes, we'll create a mock user
-      // In a real app, you would verify the token with your backend
-      setUser({
-        id: '1',
-        name: 'Demo User',
-        email: 'user@example.com',
-        bio: 'I am a software developer interested in web technologies.',
-        skills: ['JavaScript', 'React', 'Node.js'],
-        interests: ['Web Development', 'UI/UX Design', 'Open Source']
-      });
-    }
-    setLoading(false);
+    // Check if user is logged in from API
+    const verifyUser = async () => {
+      try {
+        if (localStorage.getItem('token')) {
+          const userData = await authService.getCurrentUser();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Auth verification error:', error);
+        // Token might be invalid, remove it
+        localStorage.removeItem('token');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    verifyUser();
   }, []);
 
   // Login function
   const login = async (email, password) => {
-    // Mock login - in a real app, you would call your API
     try {
-      // Mock successful login
-      const mockUser = {
-        id: '1',
-        name: 'Demo User',
-        email: email,
-        bio: 'I am a software developer interested in web technologies.',
-        skills: ['JavaScript', 'React', 'Node.js'],
-        interests: ['Web Development', 'UI/UX Design', 'Open Source']
-      };
-      
-      // Store token in localStorage
-      localStorage.setItem('token', 'demo-token');
-      setUser(mockUser);
-      return mockUser;
-    } catch (error) {
-      throw error;
+      setLoading(true);
+      const data = await authService.login(email, password);
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Register function
   const register = async (userData) => {
-    // Mock registration - in a real app, you would call your API
     try {
-      // Create mock user from registration data
-      const mockUser = {
-        id: '1',
-        name: userData.name || 'New User',
-        email: userData.email,
-        bio: userData.bio || '',
-        skills: userData.skills || [],
-        interests: userData.interests || []
-      };
-      
-      // Store token in localStorage
-      localStorage.setItem('token', 'demo-token');
-      setUser(mockUser);
-      return mockUser;
-    } catch (error) {
-      throw error;
+      setLoading(true);
+      const data = await authService.register(userData);
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Logout function
   const logout = () => {
-    localStorage.removeItem('token');
+    authService.logout();
     setUser(null);
+  };
+
+  // Update profile function
+  const updateProfile = async (profileData) => {
+    try {
+      setLoading(true);
+      const data = await authService.updateProfile(profileData);
+      setUser(data.user);
+      return data.user;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Provide auth context values
@@ -93,7 +86,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     register,
-    logout
+    logout,
+    updateProfile
   };
 
   return (

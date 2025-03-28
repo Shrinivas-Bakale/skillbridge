@@ -9,6 +9,7 @@ import {
   Link,
   Alert,
   Paper,
+  CircularProgress
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,17 +25,29 @@ const Login = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Basic validation
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!password.trim()) {
+      setError('Password is required');
+      return;
+    }
+    
     try {
       setError('');
       setLoading(true);
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError('Failed to sign in. Please check your credentials.');
+      setError(err.message || 'Failed to sign in. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -69,6 +82,7 @@ const Login = () => {
             autoFocus
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
           />
           <TextField
             margin="normal"
@@ -81,6 +95,7 @@ const Login = () => {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
           />
           <Button
             type="submit"
@@ -89,13 +104,8 @@ const Login = () => {
             sx={{ mt: 3, mb: 2 }}
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? <CircularProgress size={24} /> : 'Sign In'}
           </Button>
-          <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to="/forgot-password" variant="body2">
-              Forgot password?
-            </Link>
-          </Box>
           <Box sx={{ textAlign: 'center', mt: 2 }}>
             <Typography variant="body2">
               Don't have an account?{' '}

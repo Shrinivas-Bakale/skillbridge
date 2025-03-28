@@ -6,6 +6,10 @@ const passport = require('passport');
 const socketio = require('socket.io');
 const http = require('http');
 
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+
 // Load environment variables
 dotenv.config();
 
@@ -29,6 +33,10 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/skillbrid
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
+
 // Basic route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to SkillBridge API' });
@@ -40,6 +48,23 @@ io.on('connection', (socket) => {
   
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+  });
+  
+  // Handle event registration
+  socket.on('event:register', (data) => {
+    // Broadcast to all clients except sender
+    socket.broadcast.emit('event:update', {
+      eventId: data.eventId,
+      action: 'register'
+    });
+  });
+  
+  // Handle event creation
+  socket.on('event:create', (data) => {
+    // Broadcast to all clients
+    io.emit('event:new', {
+      eventId: data.eventId
+    });
   });
 });
 

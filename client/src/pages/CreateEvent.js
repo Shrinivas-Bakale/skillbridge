@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Box,
   Container,
   Typography,
+  Box,
   TextField,
   Button,
   Grid,
@@ -10,89 +11,341 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
+  FormHelperText,
+  InputAdornment,
+  Paper,
+  Divider,
+  CircularProgress,
+  Alert
 } from '@mui/material';
+import {
+  CalendarMonth as CalendarIcon,
+  AccessTime as TimeIcon,
+  LocationOn as LocationIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { eventService } from '../utils/eventService';
+import { useAuth } from '../contexts/AuthContext';
 
-const MotionBox = motion(Box);
+const MotionPaper = motion(Paper);
+
+const eventTypes = [
+  'Workshop',
+  'Seminar',
+  'Conference',
+  'Hackathon',
+  'Meetup',
+  'Competition',
+  'Training',
+  'Other'
+];
 
 const CreateEvent = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    type: '',
     date: '',
-    price: '',
-    type: 'workshop',
-    skills: [],
-    maxAttendees: '',
+    time: '',
+    location: '',
+    price: 0,
+    maxParticipants: '',
+    requirements: ''
+  });
+
+  const [formErrors, setFormErrors] = useState({
+    title: '',
+    description: '',
+    type: '',
+    date: '',
+    time: '',
+    location: ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: value
     }));
+    
+    // Clear the error when user types
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required';
+      isValid = false;
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+      isValid = false;
+    }
+
+    if (!formData.type) {
+      errors.type = 'Event type is required';
+      isValid = false;
+    }
+
+    if (!formData.date) {
+      errors.date = 'Date is required';
+      isValid = false;
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        errors.date = 'Date cannot be in the past';
+        isValid = false;
+      }
+    }
+
+    if (!formData.time) {
+      errors.time = 'Time is required';
+      isValid = false;
+    }
+
+    if (!formData.location.trim()) {
+      errors.location = 'Location is required';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle form submission
-    console.log(formData);
+
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Combine date and time for the backend
+      const dateTime = new Date(`${formData.date}T${formData.time}`);
+      
+      const eventData = {
+        title: formData.title,
+        description: formData.description,
+        type: formData.type,
+        date: dateTime.toISOString(),
+        location: formData.location,
+        price: Number(formData.price) || 0,
+        maxParticipants: formData.maxParticipants ? Number(formData.maxParticipants) : null,
+        requirements: formData.requirements
+      };
+
+      const createdEvent = await eventService.createEvent(eventData);
+      navigate(`/event/${createdEvent._id}`);
+    } catch (err) {
+      setError(err.message || 'Failed to create event. Please try again later.');
+      console.error('Error creating event:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Container>
-      <MotionBox
+    <Container maxWidth="md" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom align="center">
+        Create a New Event
+      </Typography>
+      
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <MotionPaper
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        sx={{ mb: 4 }}
+        elevation={3}
+        sx={{ p: 4 }}
       >
-        <Typography variant="h4" component="h1" gutterBottom>
-          Create New Event
-        </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>
+                Event Details
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            <Grid item xs={12}>
               <TextField
-                required
                 fullWidth
                 label="Event Title"
                 name="title"
                 value={formData.title}
                 onChange={handleChange}
+                error={!!formErrors.title}
+                helperText={formErrors.title}
+                disabled={loading}
+                required
               />
             </Grid>
+
             <Grid item xs={12}>
               <TextField
-                required
                 fullWidth
-                label="Description"
-                name="description"
                 multiline
                 rows={4}
+                label="Description"
+                name="description"
                 value={formData.description}
                 onChange={handleChange}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
+                disabled={loading}
+                required
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth error={!!formErrors.type} required>
+                <InputLabel>Event Type</InputLabel>
+                <Select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  label="Event Type"
+                  disabled={loading}
+                >
+                  {eventTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formErrors.type && <FormHelperText>{formErrors.type}</FormHelperText>}
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
               <TextField
-                required
+                fullWidth
+                label="Maximum Participants"
+                name="maxParticipants"
+                type="number"
+                value={formData.maxParticipants}
+                onChange={handleChange}
+                InputProps={{
+                  inputProps: { min: 1 }
+                }}
+                disabled={loading}
+                helperText="Leave empty for unlimited"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                Date and Location
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
                 fullWidth
                 label="Date"
                 name="date"
-                type="datetime-local"
+                type="date"
                 value={formData.date}
                 onChange={handleChange}
-                InputLabelProps={{
-                  shrink: true,
+                error={!!formErrors.date}
+                helperText={formErrors.date || 'When will the event take place?'}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <CalendarIcon />
+                    </InputAdornment>
+                  )
                 }}
+                InputLabelProps={{
+                  shrink: true
+                }}
+                disabled={loading}
+                required
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+
+            <Grid item xs={12} sm={6}>
               <TextField
+                fullWidth
+                label="Time"
+                name="time"
+                type="time"
+                value={formData.time}
+                onChange={handleChange}
+                error={!!formErrors.time}
+                helperText={formErrors.time || 'What time will the event start?'}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <TimeIcon />
+                    </InputAdornment>
+                  )
+                }}
+                InputLabelProps={{
+                  shrink: true
+                }}
+                disabled={loading}
                 required
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                error={!!formErrors.location}
+                helperText={formErrors.location || 'Can be a physical address or virtual meeting link'}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationIcon />
+                    </InputAdornment>
+                  )
+                }}
+                disabled={loading}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                Additional Information
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
                 fullWidth
                 label="Price"
                 name="price"
@@ -100,75 +353,49 @@ const CreateEvent = () => {
                 value={formData.price}
                 onChange={handleChange}
                 InputProps={{
-                  startAdornment: '$',
+                  startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                  inputProps: { min: 0, step: "0.01" }
                 }}
+                helperText="Set 0 for free events"
+                disabled={loading}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Event Type</InputLabel>
-                <Select
-                  name="type"
-                  value={formData.type}
-                  label="Event Type"
-                  onChange={handleChange}
-                >
-                  <MenuItem value="workshop">Workshop</MenuItem>
-                  <MenuItem value="meetup">Meetup</MenuItem>
-                  <MenuItem value="course">Course</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={6}>
+
+            <Grid item xs={12}>
               <TextField
-                required
                 fullWidth
-                label="Maximum Attendees"
-                name="maxAttendees"
-                type="number"
-                value={formData.maxAttendees}
+                multiline
+                rows={3}
+                label="Requirements (Optional)"
+                name="requirements"
+                value={formData.requirements}
                 onChange={handleChange}
+                helperText="Any prerequisites or items participants should bring"
+                disabled={loading}
               />
             </Grid>
-            <Grid item xs={12}>
-              <TextField
+
+            <Grid item xs={12} sx={{ display: 'flex', gap: 2, mt: 2 }}>
+              <Button
+                variant="outlined"
                 fullWidth
-                label="Skills (comma-separated)"
-                name="skills"
-                value={formData.skills.join(', ')}
-                onChange={(e) => {
-                  const skills = e.target.value.split(',').map(skill => skill.trim());
-                  setFormData(prev => ({ ...prev, skills }));
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                {formData.skills.map((skill, index) => (
-                  <Chip
-                    key={index}
-                    label={skill}
-                    onDelete={() => {
-                      const newSkills = formData.skills.filter((_, i) => i !== index);
-                      setFormData(prev => ({ ...prev, skills: newSkills }));
-                    }}
-                  />
-                ))}
-              </Box>
-            </Grid>
-            <Grid item xs={12}>
+                onClick={() => navigate(-1)}
+                disabled={loading}
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 variant="contained"
-                size="large"
                 fullWidth
+                disabled={loading}
               >
-                Create Event
+                {loading ? <CircularProgress size={24} /> : 'Create Event'}
               </Button>
             </Grid>
           </Grid>
         </Box>
-      </MotionBox>
+      </MotionPaper>
     </Container>
   );
 };
