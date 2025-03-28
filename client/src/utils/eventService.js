@@ -78,4 +78,18 @@ export const getUserEvents = async () => {
   } catch (error) {
     throw error.response?.data || { message: 'Failed to fetch user events' };
   }
-}; 
+};
+
+// Export as a default object as well
+const eventService = {
+  createEvent,
+  getEvents,
+  getEvent,
+  updateEvent,
+  deleteEvent,
+  registerForEvent,
+  cancelRegistration,
+  getUserEvents
+};
+
+export default eventService; 

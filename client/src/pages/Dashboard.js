@@ -18,7 +18,7 @@ import {
 import { motion } from 'framer-motion';
 import EventCard from '../components/EventCard';
 import { useAuth } from '../contexts/AuthContext';
-import { eventService } from '../utils/eventService';
+import eventService from '../utils/eventService';
 
 const Dashboard = () => {
   const { user } = useAuth();

@@ -9,7 +9,11 @@ export const register = async (userData) => {
     }
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Registration failed' };
+    console.error('Registration error:', error);
+    if (error.response && error.response.data) {
+      throw error.response.data;
+    }
+    throw { message: 'Registration failed. Please try again.' };
   }
 };
 
@@ -17,12 +21,18 @@ export const register = async (userData) => {
 export const login = async (email, password) => {
   try {
     const response = await api.post('/auth/login', { email, password });
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
+      return response.data;
+    } else {
+      throw new Error('Invalid response from server');
     }
-    return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Login failed' };
+    console.error('Login error:', error);
+    if (error.response && error.response.data) {
+      throw error.response.data;
+    }
+    throw { message: error.message || 'Login failed. Please check your credentials.' };
   }
 };
 
@@ -37,7 +47,11 @@ export const getCurrentUser = async () => {
     const response = await api.get('/auth/verify');
     return response.data.user;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to get user data' };
+    console.error('Get current user error:', error);
+    if (error.response && error.response.data) {
+      throw error.response.data;
+    }
+    throw { message: 'Failed to get user data' };
   }
 };
 
@@ -47,6 +61,10 @@ export const updateProfile = async (profileData) => {
     const response = await api.put('/auth/profile', profileData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to update profile' };
+    console.error('Update profile error:', error);
+    if (error.response && error.response.data) {
+      throw error.response.data;
+    }
+    throw { message: 'Failed to update profile' };
   }
 }; 

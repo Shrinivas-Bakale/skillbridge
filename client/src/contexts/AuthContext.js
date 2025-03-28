@@ -17,6 +17,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in from API
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.removeItem('token');
       } finally {
         setLoading(false);
+        setAuthInitialized(true);
       }
     };
 
@@ -43,8 +45,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await authService.login(email, password);
+      if (!data || !data.user) {
+        throw new Error('Login response is missing user data');
+      }
       setUser(data.user);
       return data.user;
+    } catch (error) {
+      console.error('Login error in context:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -55,8 +63,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await authService.register(userData);
+      if (!data || !data.user) {
+        throw new Error('Registration response is missing user data');
+      }
       setUser(data.user);
       return data.user;
+    } catch (error) {
+      console.error('Register error in context:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -64,8 +78,10 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = () => {
+    setLoading(true);
     authService.logout();
     setUser(null);
+    setLoading(false);
   };
 
   // Update profile function
@@ -73,8 +89,14 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       const data = await authService.updateProfile(profileData);
+      if (!data || !data.user) {
+        throw new Error('Update profile response is missing user data');
+      }
       setUser(data.user);
       return data.user;
+    } catch (error) {
+      console.error('Update profile error in context:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -90,9 +112,14 @@ export const AuthProvider = ({ children }) => {
     updateProfile
   };
 
+  // Don't render children until auth is initialized
+  if (!authInitialized) {
+    return <div>Loading authentication...</div>;
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }; 

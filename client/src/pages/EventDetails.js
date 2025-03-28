@@ -31,7 +31,7 @@ import {
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
-import { eventService } from '../utils/eventService';
+import eventService from '../utils/eventService';
 import { formatDate, formatPrice } from '../utils/helpers';
 
 const MotionBox = motion(Box);

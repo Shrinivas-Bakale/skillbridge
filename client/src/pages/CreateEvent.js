@@ -24,7 +24,7 @@ import {
   LocationOn as LocationIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { eventService } from '../utils/eventService';
+import eventService from '../utils/eventService';
 import { useAuth } from '../contexts/AuthContext';
 
 const MotionPaper = motion(Paper);
