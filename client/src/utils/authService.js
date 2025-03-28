@@ -4,7 +4,7 @@ import api from './api';
 export const register = async (userData) => {
   try {
     const response = await api.post('/auth/register', userData);
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
     }
     return response.data;
@@ -20,19 +20,34 @@ export const register = async (userData) => {
 // Login a user
 export const login = async (email, password) => {
   try {
+    console.log('Attempting login with:', { email, password: '******' });
     const response = await api.post('/auth/login', { email, password });
+    console.log('Login response:', response.data);
+    
     if (response.data && response.data.token) {
       localStorage.setItem('token', response.data.token);
       return response.data;
     } else {
-      throw new Error('Invalid response from server');
+      console.error('Invalid server response:', response.data);
+      throw new Error('Invalid response from server - missing token');
     }
   } catch (error) {
-    console.error('Login error:', error);
-    if (error.response && error.response.data) {
+    console.error('Login error details:', error);
+    
+    // Handle Axios error specifically
+    if (error.response) {
+      console.error('Error response from server:', error.response.data);
+      console.error('Error status code:', error.response.status);
       throw error.response.data;
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('No response received:', error.request);
+      throw { message: 'Server is not responding. Please try again later.' };
+    } else {
+      // Something else happened while setting up the request
+      console.error('Error setting up request:', error.message);
+      throw { message: error.message || 'Login failed. Please check your credentials.' };
     }
-    throw { message: error.message || 'Login failed. Please check your credentials.' };
   }
 };
 
