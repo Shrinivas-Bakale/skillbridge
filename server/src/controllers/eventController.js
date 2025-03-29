@@ -319,18 +319,22 @@ exports.cancelRegistration = async (req, res) => {
 exports.getUserEvents = async (req, res) => {
   try {
     // Find hosted events
-    const hostedEvents = await Event.find({ host: req.user.id }).sort({
-      date: 1,
-    });
+    const hostedEvents = await Event.find({ host: req.user.id })
+      .populate("host", "name email")
+      .sort({
+        date: 1,
+      });
 
     // Find events user is registered for
     const registeredEvents = await Event.find({
       "attendees.user": req.user.id,
-    }).sort({ date: 1 });
+    })
+      .populate("host", "name email")
+      .sort({ date: 1 });
 
     res.json({
-      hostedEvents,
-      registeredEvents,
+      hosted: hostedEvents,
+      registered: registeredEvents,
     });
   } catch (error) {
     console.error("Get user events error:", error);

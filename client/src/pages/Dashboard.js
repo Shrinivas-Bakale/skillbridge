@@ -13,12 +13,24 @@ import {
   Tab,
   Divider,
   CircularProgress,
-  Alert
+  Alert,
+  Paper,
+  Avatar,
+  useTheme,
+  IconButton
 } from '@mui/material';
+import {
+  Add as AddIcon,
+  Refresh as RefreshIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import EventCard from '../components/EventCard';
 import { useAuth } from '../contexts/AuthContext';
 import eventService from '../utils/eventService';
+
+const MotionContainer = motion(Container);
+const MotionBox = motion(Box);
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -27,22 +39,40 @@ const Dashboard = () => {
   const [userEvents, setUserEvents] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const theme = useTheme();
+
+  const fetchUserEvents = async () => {
+    try {
+      setRefreshing(true);
+      const data = await eventService.getUserEvents();
+      console.log('Fetched user events:', data);
+      
+      // Add detailed logging for debugging
+      if (!data.registered || data.registered.length === 0) {
+        console.log('No registered events found in response');
+      } else {
+        console.log(`Found ${data.registered.length} registered events`);
+      }
+      
+      if (!data.hosted || data.hosted.length === 0) {
+        console.log('No hosted events found in response');
+      } else {
+        console.log(`Found ${data.hosted.length} hosted events`);
+      }
+      
+      setUserEvents(data);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Failed to fetch your events. Please try again later.');
+      console.error('Error fetching user events:', err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUserEvents = async () => {
-      try {
-        setLoading(true);
-        const data = await eventService.getUserEvents();
-        setUserEvents(data);
-        setError('');
-      } catch (err) {
-        setError(err.message || 'Failed to fetch your events. Please try again later.');
-        console.error('Error fetching user events:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUserEvents();
   }, []);
 
@@ -58,17 +88,59 @@ const Dashboard = () => {
     navigate('/events');
   };
 
+  const handleRefreshEvents = () => {
+    fetchUserEvents();
+  };
+
   // Filter events based on the selected tab
   const getDisplayedEvents = () => {
     if (!userEvents) return [];
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    console.log('Filtering events for tab:', value);
+    
     switch (value) {
       case 0: // Upcoming events the user is registered for
-        return userEvents.registered?.filter(event => new Date(event.date) >= new Date()) || [];
+        if (!userEvents.registered || !Array.isArray(userEvents.registered)) {
+          console.log('No registered events array found');
+          return [];
+        }
+        
+        const upcomingEvents = userEvents.registered.filter(event => {
+          if (!event || !event.date) return false;
+          const eventDate = new Date(event.date);
+          return eventDate >= today;
+        });
+        
+        console.log(`Found ${upcomingEvents.length} upcoming events`);
+        return upcomingEvents;
+        
       case 1: // Past events the user attended
-        return userEvents.registered?.filter(event => new Date(event.date) < new Date()) || [];
+        if (!userEvents.registered || !Array.isArray(userEvents.registered)) {
+          console.log('No registered events array found');
+          return [];
+        }
+        
+        const pastEvents = userEvents.registered.filter(event => {
+          if (!event || !event.date) return false;
+          const eventDate = new Date(event.date);
+          return eventDate < today;
+        });
+        
+        console.log(`Found ${pastEvents.length} past events`);
+        return pastEvents;
+        
       case 2: // Events hosted by the user
-        return userEvents.hosted || [];
+        if (!userEvents.hosted || !Array.isArray(userEvents.hosted)) {
+          console.log('No hosted events array found');
+          return [];
+        }
+        
+        console.log(`Found ${userEvents.hosted.length} hosted events`);
+        return userEvents.hosted;
+        
       default:
         return [];
     }
@@ -77,7 +149,13 @@ const Dashboard = () => {
   if (loading) {
     return (
       <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-        <CircularProgress />
+        <CircularProgress 
+          size={60} 
+          thickness={4}
+          sx={{ 
+            color: 'linear-gradient(45deg, #4A00E0, #8E2DE2)'
+          }}
+        />
       </Container>
     );
   }
@@ -85,15 +163,61 @@ const Dashboard = () => {
   const displayedEvents = getDisplayedEvents();
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Welcome, {user?.name || 'Student'}!
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          Manage your events and discover new opportunities
-        </Typography>
-      </Box>
+    <MotionContainer 
+      maxWidth="lg" 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      sx={{ py: 4 }}
+    >
+      <MotionBox 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        sx={{ mb: 4 }}
+      >
+        <Paper
+          elevation={0}
+          sx={{ 
+            p: 3, 
+            borderRadius: 2, 
+            background: 'linear-gradient(to right, rgba(74, 0, 224, 0.05), rgba(142, 45, 226, 0.1))',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2
+          }}
+        >
+          <Avatar 
+            sx={{ 
+              width: 64, 
+              height: 64, 
+              bgcolor: 'primary.main',
+              boxShadow: '0 4px 12px rgba(142, 45, 226, 0.4)'
+            }}
+          >
+            {user?.name?.charAt(0) || <PersonIcon />}
+          </Avatar>
+          <Box>
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              gutterBottom
+              sx={{ 
+                fontWeight: 700,
+                background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              Welcome, {user?.name || 'Student'}!
+            </Typography>
+            <Typography variant="subtitle1" color="text.secondary">
+              Manage your events and discover new opportunities
+            </Typography>
+          </Box>
+        </Paper>
+      </MotionBox>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
@@ -103,68 +227,130 @@ const Dashboard = () => {
 
       <Grid container spacing={4}>
         <Grid item xs={12} md={8}>
-          <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h5" component="h2">
-                Your Events
-              </Typography>
-              <Button variant="contained" onClick={handleCreateEvent}>
-                Create Event
-              </Button>
-            </Box>
-            
-            <Tabs
-              value={value}
-              onChange={handleChange}
-              indicatorColor="primary"
-              textColor="primary"
-              variant="fullWidth"
-              sx={{ mb: 2 }}
-            >
-              <Tab label="Upcoming" />
-              <Tab label="Past" />
-              <Tab label="Hosted" />
-            </Tabs>
-            
-            {displayedEvents.length > 0 ? (
-              <Grid container spacing={3}>
-                {displayedEvents.map((event) => (
-                  <Grid item xs={12} sm={6} key={event._id}>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <EventCard event={event} />
-                    </motion.div>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography variant="body1" color="text.secondary">
-                  {value === 0
-                    ? "You're not registered for any upcoming events."
-                    : value === 1
-                    ? "You haven't attended any events yet."
-                    : "You haven't hosted any events yet."}
+          <MotionBox 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            sx={{ mb: 3 }}
+          >
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h5" component="h2" fontWeight={600}>
+                  Your Events
                 </Typography>
-                <Button
-                  variant="outlined"
-                  onClick={handleViewAllEvents}
-                  sx={{ mt: 2 }}
-                >
-                  Explore Events
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <IconButton 
+                    onClick={handleRefreshEvents} 
+                    disabled={refreshing}
+                    sx={{ color: 'primary.main' }}
+                  >
+                    {refreshing ? <CircularProgress size={24} /> : <RefreshIcon />}
+                  </IconButton>
+                  <Button 
+                    variant="contained" 
+                    onClick={handleCreateEvent}
+                    startIcon={<AddIcon />}
+                    sx={{ 
+                      background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                      '&:hover': {
+                        background: 'linear-gradient(45deg, #3b00b3, #7526b6)',
+                        boxShadow: '0 8px 20px rgba(142, 45, 226, 0.4)'
+                      },
+                      boxShadow: '0 4px 15px rgba(142, 45, 226, 0.3)'
+                    }}
+                  >
+                    Create Event
+                  </Button>
+                </Box>
               </Box>
-            )}
-          </Box>
+              
+              <Tabs
+                value={value}
+                onChange={handleChange}
+                indicatorColor="primary"
+                textColor="primary"
+                variant="fullWidth"
+                sx={{ 
+                  mb: 3,
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: '#8E2DE2',
+                    height: 3,
+                    borderRadius: '3px 3px 0 0'
+                  },
+                  '& .Mui-selected': {
+                    color: '#4A00E0',
+                    fontWeight: 'bold'
+                  }
+                }}
+              >
+                <Tab label="Upcoming" />
+                <Tab label="Past" />
+                <Tab label="Hosted" />
+              </Tabs>
+              
+              {refreshing && (
+                <Box sx={{ textAlign: 'center', py: 2 }}>
+                  <CircularProgress size={30} />
+                </Box>
+              )}
+              
+              {!refreshing && displayedEvents.length > 0 ? (
+                <Grid container spacing={3}>
+                  {displayedEvents.map((event) => (
+                    <Grid item xs={12} sm={6} key={event._id}>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <EventCard event={event} onEventAction={fetchUserEvents} />
+                      </motion.div>
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : !refreshing && (
+                <Box sx={{ 
+                  textAlign: 'center', 
+                  py: 6, 
+                  backgroundColor: 'rgba(0,0,0,0.02)', 
+                  borderRadius: 2 
+                }}>
+                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                    {value === 0
+                      ? "You're not registered for any upcoming events."
+                      : value === 1
+                      ? "You haven't attended any events yet."
+                      : "You haven't hosted any events yet."}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    onClick={handleViewAllEvents}
+                    sx={{ 
+                      mt: 2,
+                      borderColor: theme.palette.primary.main,
+                      color: theme.palette.primary.main,
+                      '&:hover': {
+                        borderColor: theme.palette.primary.dark,
+                        backgroundColor: 'rgba(74, 0, 224, 0.04)'
+                      }
+                    }}
+                  >
+                    Explore Events
+                  </Button>
+                </Box>
+              )}
+            </Paper>
+          </MotionBox>
         </Grid>
         
         <Grid item xs={12} md={4}>
-          <Card elevation={2}>
-            <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
+          <MotionBox
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <Paper sx={{ p: 3, borderRadius: 2 }}>
+              <Typography variant="h6" component="div" gutterBottom fontWeight={600}>
                 Your Profile
               </Typography>
               <Divider sx={{ mb: 2 }} />
@@ -189,8 +375,8 @@ const Dashboard = () => {
                       <Box
                         key={index}
                         sx={{
-                          backgroundColor: 'primary.light',
-                          color: 'primary.contrastText',
+                          background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                          color: 'white',
                           borderRadius: 1,
                           px: 1,
                           py: 0.5,
@@ -214,8 +400,8 @@ const Dashboard = () => {
                       <Box
                         key={index}
                         sx={{
-                          backgroundColor: 'secondary.light',
-                          color: 'secondary.contrastText',
+                          backgroundColor: 'rgba(142, 45, 226, 0.2)',
+                          color: '#8E2DE2',
                           borderRadius: 1,
                           px: 1,
                           py: 0.5,
@@ -228,17 +414,28 @@ const Dashboard = () => {
                   </Box>
                 </>
               )}
-            </CardContent>
-            <CardActions>
-              <Button size="small" onClick={() => navigate('/profile')}>
-                Edit Profile
-              </Button>
-            </CardActions>
-          </Card>
+              <Box sx={{ mt: 2 }}>
+                <Button 
+                  onClick={() => navigate('/profile')}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    mt: 1,
+                    borderColor: theme.palette.primary.main,
+                    color: theme.palette.primary.main,
+                    '&:hover': {
+                      borderColor: theme.palette.primary.dark,
+                      backgroundColor: 'rgba(74, 0, 224, 0.04)'
+                    }
+                  }}
+                >
+                  Edit Profile
+                </Button>
+              </Box>
+            </Paper>
           
-          <Card elevation={2} sx={{ mt: 3 }}>
-            <CardContent>
-              <Typography variant="h6" component="div" gutterBottom>
+            <Paper sx={{ p: 3, borderRadius: 2, mt: 3 }}>
+              <Typography variant="h6" component="div" gutterBottom fontWeight={600}>
                 Quick Stats
               </Typography>
               <Divider sx={{ mb: 2 }} />
@@ -246,34 +443,65 @@ const Dashboard = () => {
               <Grid container spacing={2}>
                 <Grid item xs={4}>
                   <Box textAlign="center">
-                    <Typography variant="h4" color="primary">
-                      {userEvents?.registered?.filter(event => new Date(event.date) >= new Date()).length || 0}
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        fontWeight: 700,
+                        background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }}
+                    >
+                      {userEvents?.registered?.filter(event => 
+                        event?.date && new Date(event.date) >= new Date(new Date().setHours(0,0,0,0))
+                      ).length || 0}
                     </Typography>
-                    <Typography variant="body2">Upcoming</Typography>
+                    <Typography variant="body2" color="text.secondary">Upcoming</Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={4}>
                   <Box textAlign="center">
-                    <Typography variant="h4" color="primary">
-                      {userEvents?.registered?.filter(event => new Date(event.date) < new Date()).length || 0}
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        fontWeight: 700,
+                        background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }}
+                    >
+                      {userEvents?.registered?.filter(event => 
+                        event?.date && new Date(event.date) < new Date(new Date().setHours(0,0,0,0))
+                      ).length || 0}
                     </Typography>
-                    <Typography variant="body2">Attended</Typography>
+                    <Typography variant="body2" color="text.secondary">Attended</Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={4}>
                   <Box textAlign="center">
-                    <Typography variant="h4" color="primary">
-                      {userEvents?.hosted?.length || 0}
+                    <Typography 
+                      variant="h4" 
+                      sx={{ 
+                        fontWeight: 700,
+                        background: 'linear-gradient(45deg, #4A00E0, #8E2DE2)',
+                        backgroundClip: 'text',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                      }}
+                    >
+                      {Array.isArray(userEvents?.hosted) ? userEvents.hosted.length : 0}
                     </Typography>
-                    <Typography variant="body2">Hosted</Typography>
+                    <Typography variant="body2" color="text.secondary">Hosted</Typography>
                   </Box>
                 </Grid>
               </Grid>
-            </CardContent>
-          </Card>
+            </Paper>
+          </MotionBox>
         </Grid>
       </Grid>
-    </Container>
+    </MotionContainer>
   );
 };
 

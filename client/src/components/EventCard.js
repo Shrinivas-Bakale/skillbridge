@@ -9,18 +9,64 @@ import {
   Box,
   Chip,
   Avatar,
-  Tooltip
+  Tooltip,
+  Alert,
+  Skeleton,
+  CardMedia
 } from '@mui/material';
 import {
   Person as PersonIcon,
   Event as EventIcon,
   LocationOn as LocationIcon,
-  MonetizationOn as PriceIcon
+  MonetizationOn as PriceIcon,
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import { formatDate, formatPrice } from '../utils/helpers';
 
-const EventCard = ({ event }) => {
+const EventCard = ({ event, onEventAction }) => {
   const navigate = useNavigate();
+
+  // Handle case where event is null or undefined
+  if (!event || !event._id) {
+    return (
+      <Card 
+        elevation={2} 
+        sx={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column',
+          opacity: 0.7
+        }}
+      >
+        <CardContent sx={{ flexGrow: 1 }}>
+          <Alert 
+            severity="error" 
+            icon={<ErrorIcon />}
+            sx={{ mb: 2 }}
+          >
+            Event not found or has been removed
+          </Alert>
+          <Skeleton variant="text" height={40} />
+          <Skeleton variant="text" />
+          <Skeleton variant="text" />
+          <Skeleton variant="text" width="60%" />
+        </CardContent>
+        <CardActions>
+          <Button 
+            fullWidth 
+            variant="outlined" 
+            color="primary"
+            onClick={() => {
+              if (onEventAction) onEventAction();
+              navigate('/events');
+            }}
+          >
+            Browse Events
+          </Button>
+        </CardActions>
+      </Card>
+    );
+  }
 
   // Calculate if the event is in the past
   const isEventPast = new Date(event.date) < new Date();
@@ -48,6 +94,12 @@ const EventCard = ({ event }) => {
     return 'Available';
   };
 
+  const handleViewDetails = () => {
+    navigate(`/event/${event._id}`);
+  };
+
+  const defaultImage = 'https://source.unsplash.com/random/800x600?event';
+
   return (
     <Card 
       elevation={2} 
@@ -59,10 +111,22 @@ const EventCard = ({ event }) => {
         '&:hover': {
           transform: 'translateY(-5px)',
           boxShadow: 6
-        }
+        },
+        borderRadius: 2,
+        overflow: 'hidden'
       }}
     >
-      <CardContent sx={{ flexGrow: 1 }}>
+      <CardMedia
+        component="img"
+        height="160"
+        image={event.image || defaultImage}
+        alt={event.title}
+        sx={{ 
+          objectFit: 'cover',
+          objectPosition: 'center'
+        }}
+      />
+      <CardContent sx={{ flexGrow: 1, p: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
           <Typography 
             variant="h6" 
@@ -157,17 +221,30 @@ const EventCard = ({ event }) => {
         )}
       </CardContent>
       
-      <CardActions>
+      <CardActions sx={{ p: 2, pt: 0 }}>
         <Button 
           fullWidth 
           variant="outlined" 
-          onClick={() => navigate(`/event/${event._id}`)}
+          onClick={handleViewDetails}
+          sx={{
+            borderColor: 'primary.main',
+            color: 'primary.main',
+            '&:hover': {
+              borderColor: 'primary.dark',
+              backgroundColor: 'rgba(74, 0, 224, 0.04)'
+            }
+          }}
         >
           View Details
         </Button>
       </CardActions>
     </Card>
   );
+};
+
+// Set default props
+EventCard.defaultProps = {
+  onEventAction: () => {}
 };
 
 export default EventCard; 
